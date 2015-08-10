@@ -1,4 +1,5 @@
 from django import template
+from django.forms import widgets
 from django.template import Context
 from django.template.loader import get_template
 
@@ -9,11 +10,19 @@ register = template.Library()
 def _preprocess_fields(form):
     for field in form.fields:
         name = form.fields[field].widget.__class__.__name__.lower()
+
         if not name.startswith("radio") and not name.startswith("checkbox"):
-            try:
-                form.fields[field].widget.attrs["class"] += " form-control"
-            except KeyError:
-                form.fields[field].widget.attrs["class"] = " form-control"
+            field_widgets = [form.fields[field].widget]
+
+            if isinstance(form.fields[field].widget, widgets.MultiWidget):
+                field_widgets = form.fields[field].widget.widgets
+
+            for widget in field_widgets:
+                if 'class' in widget.attrs:
+                    widget.attrs['class'] += " form-control"
+                else:
+                    widget.attrs['class'] = " form-control"
+
     return form
 
 
